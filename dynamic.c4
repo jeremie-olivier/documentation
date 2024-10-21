@@ -1,0 +1,252 @@
+model {
+    actor Etudiant {
+        description 'Etudiant de THP'
+        -> cpf.inscriptionCPF
+        -> cpf.numero
+        -> socials
+        -> thp
+    }
+
+    Organigram = system 'Organigramme de THP' {
+        Lilian = actor 'Lilian Muller' {
+            description 'CEO'
+        }
+        Jeremie = actor 'Jeremie Olivier' {
+            description 'CTO'
+        }
+        Geanina = actor 'Geaninia Chamba' {
+            description 'Administration'
+        }
+        Florian = actor 'Florian Van Camp' {
+            description 'Opération Community'
+        }
+        Elodie = actor 'Elodie Destres' {
+            description 'Référante handicap'
+
+        }
+        Lilian -> Jeremie
+        Lilian -> Geanina
+        Lilian -> Florian
+        Lilian -> Elodie
+    }
+
+    THP = system 'Decouverte de The Hacking project' {
+        style {
+            color indigo
+        }
+
+
+
+
+        cpf = web 'Dashboad CPF' {
+            description 'Recherche une formation'
+
+            link ./dynamic.c4 "test"
+
+
+
+            CPFSubmition = database 'Demande de finnancement CPF' {
+                -> Hubspot.mailCpf
+            }
+
+
+
+            inscriptionCPF = web 'Inscription CPF' {
+                description 'Inscription au CPF'
+                -> CPFSubmition
+            }
+            numero = mobile 'Numero de telephone' {
+                -> appelInfo
+            }
+
+
+        }
+
+
+
+        thp = component "THP" {
+            description 'Site web de THP'
+            web FrontEnd {
+                web Contentful {
+                    title 'Blog'
+                }
+                web SiteCorp {
+                    icon: https://www.thehackingproject.org/assets/favicon/apple-touch-icon-c01aaccf467f7cc3d79bbce743d60779f5b833fdc4500cebd07a5e11a07a5c31.png
+                    -> Database
+                    -> Redis
+                }
+
+                web DashboardEtudiant {
+                    icon: https://www.thehackingproject.org/assets/favicon/apple-touch-icon-c01aaccf467f7cc3d79bbce743d60779f5b833fdc4500cebd07a5e11a07a5c31.png
+                    -> Database
+                    -> Redis
+                }
+                web DashboardAdmin {
+                    -> Database
+                    -> Redis
+
+                }
+            }
+
+            component BackEnd {
+                database Database {
+                    icon tech:postgresql
+                    description: "Postgresql"
+                }
+                redis Redis
+            }
+
+            -> test
+        }
+
+        socials = web "Socials" {
+            description 'Socials de THP'
+            web Linkedin
+            web Instagram
+            web Twitter
+
+            -> thp
+        }
+
+    }
+
+    appel = mobile 'OnOff' {
+        appelInfo = mobile 'Appel' {
+            description '<5 min'
+            description '<5 min \n demande de faire le test logique en priemier'
+            -> thp
+        }
+        appelValidation = mobile 'Appel validation' {
+            description '10 a 30 min'
+            -> suivisEleves
+            -> LogAppel
+        }
+    }
+
+    web tally {
+        test = component 'Test de logique' {
+            -> Hubspot
+            -> tallySubmition
+        }
+        web Hubspot {
+            -> iframeMeeting
+        }
+        tallySubmition = database 'Soumission du test'
+
+    }
+
+    component Administration {
+        title 'Administration'
+        description 'Administration de THP'
+
+
+
+        checkCpf = event "Verification du CPF" {
+            -> appelInfo
+        }
+        activateStudent = event "Activation de l'etudiant"
+
+    }
+
+    component Discord {
+        suivisEleves = database '#suivis-eleves' {
+            -> activateStudent
+        }
+
+    }
+
+    component Hubspot {
+        style {
+            color amber
+        }
+        database LogAppel "Log des appels"
+        event mailCpf "Email nouvelle inscription CPF" {
+
+            -> checkCpf
+        }
+        iframeMeeting = web 'Iframe de reservation de RDV' {
+            -> appelValidation
+        }
+    }
+
+
+}
+
+views {
+
+
+    view index {
+        title 'THP : Cycle de vie Etudiant'
+        description: "Decrit les differente etapes d'un etudiant de sa decouverte a son diplome RNCP"
+        include
+            Etudiant.*,
+            cpf.*,
+            THP.*,
+            appel.*,
+            Administration,
+
+            Administration.*,
+            tally,
+
+            tally.*,
+            Hubspot,
+
+            Hubspot.*,
+            Discord,
+            Discord.*
+
+    }
+
+    view Organigram {
+        title 'Organigramme'
+        description: "Organigramme de THP"
+        include
+            Organigram,
+            Organigram.*
+    }
+
+    view THP {
+        title "THP"
+        description: "THP"
+        include
+            THP.thp,
+            THP.thp.*,
+            thp.FrontEnd,
+            thp.FrontEnd.*
+    }
+
+    dynamic view allInOne {
+        title 'THP : Cycle de vie Etudiant'
+        description: "Decrit les differente etapes d'un etudiant de sa decouverte a son diplome RNCP"
+
+        include *
+        style THP.cpf.inscriptionCPF {
+            shape rectangle
+        }
+        style THP.cpf.numero {
+            shape rectangle
+        }
+
+        parallel {
+            Etudiant -> cpf
+            Etudiant -> socials
+            Etudiant -> thp
+
+
+
+        }
+
+        socials -> thp
+        numero -> appelInfo
+        appelInfo -> thp
+        thp -> test
+        test -> Hubspot
+        test -> tallySubmition
+        Hubspot -> appelValidation
+
+
+    }
+
+
+
+}
